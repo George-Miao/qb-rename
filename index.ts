@@ -12,13 +12,14 @@ const episode_rules = [
   /(.*)- (\d{1,3}|\d{1,3}\.\d{1,2})(?:v\d{1,2})?(?:END)? (.*)/
 ]
 
-const qb = new QBittorrent(process.env.QB_URL ?? "http://localhost:8080/")
+const qb = new QBittorrent(process.env.QB_URL ?? 'http://localhost:8080/')
 const api = new Api(qb)
 
 const rename = async (t: RawTorrent) => {
   const { infohash_v1: hash, content_path } = t
   const oldPath = path.parse(content_path).base
 
+  // check rules one by one, this cannot be parallelized
   for (let rule of episode_rules) {
     const matchObj = oldPath.match(rule)
     if (matchObj) {
@@ -27,39 +28,42 @@ const rename = async (t: RawTorrent) => {
       console.log(`${oldPath} -> ${newPath}`)
 
       await api.renameTorrentFile(hash, oldPath, newPath)
+      await check(hash, oldPath)
 
-      await general_check(hash, oldPath)
       return
     }
   }
-  await general_check(hash, oldPath)
+  await check(hash, oldPath)
 }
 
-const general_check = async (hash: string, oldPath: string) => {
-  const newPath = oldPath.split(' ').join(' ')
+const check = async (hash: string, oldPath: string) => {
+  const newPath = oldPath.replace(/\s{2,}/, ' ')
   if (newPath !== oldPath) {
     console.log(`${oldPath} -> ${newPath}`)
     await api.renameTorrentFile(hash, oldPath, newPath)
   }
 }
 
-const escapeName = (t: RawTorrent) => ({ ...t, name: t.name.replace('/', ' ') })
-
-async function main() {
-  const [username, password] = [process.env.QB_USERNAME, process.env.QB_PASSWORD]
+const main = async () => {
+  const [username, password] = [
+    process.env.QB_USERNAME,
+    process.env.QB_PASSWORD
+  ]
   if (!username || !password) {
     console.error('QB_USERNAME and QB_PASSWORD must be set')
     process.exit(1)
   }
   await qb.login(username, password)
 
-  const res = await api.getTorrents().then(x => x.map(escapeName))
+  const res = await api.getTorrents()
 
-  for (let t of res) {
-    if (t.state === 'missingFiles') continue
-    // console.log(t)
-    await rename(t)
-  }
+  await Promise.all(
+    res.map(async t => {
+      if (t.state === 'missingFiles') return
+      // console.log(t)
+      await rename(t)
+    })
+  )
 }
 
 main()
