@@ -1,0 +1,19 @@
+{
+  "name": "qb-rename",
+  "version": "1.0.0",
+  "type": "module",
+  "author": "George Miao",
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^17.0.23",
+    "@georgemiao/qbit.js": "^2.1.1"
+  },
+  "scripts": {
+    "dev": "node --loader ts-node/esm index.ts"
+  },
+  "devDependencies": {
+    "@sapphire/ts-config": "^3.3.4",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.3"
+  }
+}
