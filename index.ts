@@ -16,31 +16,39 @@ const qb = new QBittorrent(process.env.QB_URL ?? 'http://localhost:8080/')
 const api = new Api(qb)
 
 const rename = async (t: RawTorrent) => {
-  const { infohash_v1: hash, content_path } = t
+  const { infohash_v1: hash, content_path, save_path } = t
   const oldPath = path.parse(content_path).base
+  const files = await api.getTorrentFiles(hash)
 
   // check rules one by one, this cannot be parallelized
-  for (let rule of episode_rules) {
-    const matchObj = oldPath.match(rule)
-    if (matchObj) {
-      const newPath = `${matchObj[1].trim()} E${matchObj[2].trim()} ${matchObj[3].trim()}`
-      console.log(content_path)
-      console.log(`${oldPath} -> ${newPath}`)
+  for (let file of files) {
+    for (let rule of episode_rules) {
+      const matchObj = file.name.match(rule)
+      if (!matchObj) continue
 
-      await api.renameTorrentFile(hash, oldPath, newPath)
-      await check(hash, oldPath)
+      const oldName = file.name
+      const newName = `${matchObj[1].trim()} E${matchObj[2].trim()} ${matchObj[3].trim()}`
 
-      return
+      console.log(`${oldName} -> ${newName}`)
+
+      await api.renameTorrentFile(
+        hash,
+        oldName,
+        newName
+      )
+      await checkSpace(hash, oldName)
+
+      break
     }
   }
-  await check(hash, oldPath)
+  await checkSpace(hash, oldPath)
 }
 
-const check = async (hash: string, oldPath: string) => {
-  const newPath = oldPath.replace(/\s{2,}/, ' ')
-  if (newPath !== oldPath) {
-    console.log(`${oldPath} -> ${newPath}`)
-    await api.renameTorrentFile(hash, oldPath, newPath)
+const checkSpace = async (hash: string, oldName: string) => {
+  const newName = oldName.replace(/\s{2,}/, ' ')
+  if (newName !== oldName) {
+    console.log(`${oldName} -> ${newName}`)
+    await api.renameTorrentFile(hash, oldName, newName)
   }
 }
 

@@ -1,0 +1,24 @@
+{
+  "typescript": {
+    "semiColons": "asi",
+    "indentWidth": 2,
+    "quoteProps": "asNeeded",
+    "jsx.quoteStyle": "preferSingle",
+    "quoteStyle": "preferSingle",
+    "trailingCommas": "never",
+    "arrowFunction.useParentheses": "preferNone"
+  },
+  "json": {},
+  "includes": [
+    "**/*.{ts,tsx,js,jsx,cjs,mjs,json,md,toml}"
+  ],
+  "excludes": [
+    "**/node_modules",
+    "**/*-lock.json",
+    "**/.next"
+  ],
+  "plugins": [
+    "https://plugins.dprint.dev/typescript-0.71.1.wasm",
+    "https://plugins.dprint.dev/json-0.15.1.wasm"
+  ]
+}
